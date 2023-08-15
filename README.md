@@ -16,7 +16,7 @@ python3 -m pip install -r requirements.txt
 python3 -m unittest discover
 
 # Run specific test
-python3 -m unittest tests/test_01.py
+python3 -m unittest tests/test_puzzle_day_01.py
 
 # ... 👨‍💻 ...
 
