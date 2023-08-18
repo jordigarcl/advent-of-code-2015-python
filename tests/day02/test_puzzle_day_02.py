@@ -1,5 +1,6 @@
 import unittest
 from parameterized import parameterized
+import os
 
 
 class PuzzleDay02:
@@ -37,7 +38,7 @@ class TestPuzzleDay02(unittest.TestCase):
         self.assertEqual(puzzle_solution, PuzzleDay02.solve_puzzle_1(puzzle_input))
 
     def test_puzzle1(self):
-        puzzle_input = open("input_puzzle.txt", "r").read()
+        puzzle_input = open(os.path.join(os.path.dirname(__file__), 'input_puzzle.txt'), "r").read()
         puzzle_answer = 1588178
         self.assertEqual(puzzle_answer, PuzzleDay02.solve_puzzle_1(puzzle_input))
 
@@ -49,7 +50,7 @@ class TestPuzzleDay02(unittest.TestCase):
         self.assertEqual(puzzle_solution, PuzzleDay02.solve_puzzle_2(puzzle_input))
 
     def test_puzzle2(self):
-        puzzle_input = open("input_puzzle.txt", "r").read()
+        puzzle_input = open(os.path.join(os.path.dirname(__file__), 'input_puzzle.txt'), "r").read()
         puzzle_answer = 3783758
         self.assertEqual(puzzle_answer, PuzzleDay02.solve_puzzle_2(puzzle_input))
 
