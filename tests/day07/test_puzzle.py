@@ -12,138 +12,119 @@ class PuzzleDay06:
         mask16 = 0xFFFF
 
         class Gate:
-            def __init__(self, gate_type, name, input_gates, input_param=None):
-                self.gate_type = gate_type
+            def __init__(self, kind, name, inputs):
+                self.kind = kind
                 self.name = name
-                self.input_gates = input_gates
-                self.input_param = int(input_param) & mask16 if input_param is not None else None
+                self.inputs = inputs
+                self.output = None
 
-            def resolve_output_value(self, circuit):
+            def resolve_value(self, input):
+                if input.isnumeric():
+                    return int(input) & mask16
+                else:
+                    return circuit.get_gate(input).resolve_output()
 
-                if self.gate_type == "NOT":
-                    val = circuit.get_gate(self.input_gates[0]).resolve_output_value(circuit)
-                    return (~val) & mask16
-                elif self.gate_type == "AND":
-                    val1 = circuit.get_gate(self.input_gates[0]).resolve_output_value(circuit)
-                    val2 = circuit.get_gate(self.input_gates[1]).resolve_output_value(circuit)
-                    return (val1 & val2) & mask16
-                elif self.gate_type == "OR":
-                    val1 = circuit.get_gate(self.input_gates[0]).resolve_output_value(circuit)
-                    val2 = circuit.get_gate(self.input_gates[1]).resolve_output_value(circuit)
-                    return (val1 | val2) & mask16
-                elif self.gate_type == "LSHIFT":
-                    val1 = circuit.get_gate(self.input_gates[0]).resolve_output_value(circuit)
-                    val2 = self.input_param
-                    return (val1 << val2) & mask16
-                elif self.gate_type == "RSHIFT":
-                    val1 = circuit.get_gate(self.input_gates[0]).resolve_output_value(circuit)
-                    val2 = self.input_param
-                    return (val1 >> val2) & mask16
-                elif self.gate_type == "DIRECT_VALUE":
-                    val = self.input_param
-                    return (val) & mask16
-                elif self.gate_type == "DIRECT_GATE":
-                    val = circuit.get_gate(self.input_gates[0]).resolve_output_value(circuit)
-                    return (val) & mask16
+            def resolve_output(self):
+                if self.output is not None:
+                    return self.output
+
+                print(f"❓ Resolving {self.name}...")
+
+                if self.kind == "NOT":
+                    val1 = self.resolve_value(self.inputs[0])
+                    self.output = (~val1) & mask16
+                elif self.kind == "AND":
+                    val1 = self.resolve_value(self.inputs[0])
+                    val2 = self.resolve_value(self.inputs[1])
+                    self.output = (val1 & val2) & mask16
+                elif self.kind == "OR":
+                    val1 = self.resolve_value(self.inputs[0])
+                    val2 = self.resolve_value(self.inputs[1])
+                    self.output = (val1 | val2) & mask16
+                elif self.kind == "LSHIFT":
+                    val1 = self.resolve_value(self.inputs[0])
+                    val2 = self.resolve_value(self.inputs[1])
+                    self.output = (val1 << val2) & mask16
+                elif self.kind == "RSHIFT":
+                    val1 = self.resolve_value(self.inputs[0])
+                    val2 = self.resolve_value(self.inputs[1])
+                    self.output = (val1 >> val2) & mask16
+                elif self.kind == "DIRECT":
+                    val1 = self.resolve_value(self.inputs[0])
+                    self.output = (val1) & mask16
                 else:
                     raise Exception("this should not happen")
 
+                print(f"✅ Resolved {self.name}: {self.output}")
+                return self.output
+
         class Circuit:
-            def __init__(self):
+            def __init__(self, gates):
                 self.gates = dict()
+                for gate in gates:
+                    self.gates[gate.name] = gate
 
             def get_gate(self, gate_name):
-                print(gate_name)
                 return self.gates[gate_name]
 
-            def add_gate_not(self, input_wire_name, output_wire_name):
-                self.gates[output_wire_name] = Gate("NOT", output_wire_name, [input_wire_name])
-
-            def add_gate_and(self, input_1_wire_name, input_2_wire_name, output_wire_name):
-                self.gates[output_wire_name] = Gate("AND", output_wire_name, [input_1_wire_name, input_2_wire_name])
-
-            def add_gate_or(self, input_1_wire_name, input_2_wire_name, output_wire_name):
-                self.gates[output_wire_name] = Gate("OR", output_wire_name, [input_1_wire_name, input_2_wire_name])
-
-            def add_gate_lshift(self, input_wire_name, input_param, output_wire_name):
-                self.gates[output_wire_name] = Gate("LSHIFT", output_wire_name, [input_wire_name], input_param)
-
-            def add_gate_rshift(self, input_wire_name, input_param, output_wire_name):
-                self.gates[output_wire_name] = Gate("RSHIFT", output_wire_name, [input_wire_name], input_param)
-
-            def add_gate_direct_value(self, input_param, output_wire_name):
-                self.gates[output_wire_name] = Gate("DIRECT_VALUE", output_wire_name, [], input_param)
-
-            def add_gate_direct_gate(self, input_wire_name, output_wire_name):
-                self.gates[output_wire_name] = Gate("DIRECT_GATE", output_wire_name, [input_wire_name])
-
-        def build_circuit(puzzle_input):
-
+        def parse_gates(puzzle_input):
             regex_not = r'NOT (\w+) -> (\w+)'
             regex_and = r'(\w+) AND (\w+) -> (\w+)'
             regex_or = r'(\w+) OR (\w+) -> (\w+)'
-            regex_lshift = r'(\w+) LSHIFT (\d+) -> (\w+)'
-            regex_rshift = r'(\w+) RSHIFT (\d+) -> (\w+)'
-            regex_direct_val = r'(\d+) -> (\w+)'
-            regex_direct_gate = r'(\w+) -> (\w+)'
-
-            circuit = Circuit()
+            regex_lshift = r'(\w+) LSHIFT (\w+) -> (\w+)'
+            regex_rshift = r'(\w+) RSHIFT (\w+) -> (\w+)'
+            regex_direct = r'(\w+) -> (\w+)'
 
             for line in puzzle_input.splitlines():
-                if "NOT" in line:
+                match = re.match(regex_not, line)
+                if match is not None:
                     # e.g. "NOT x -> h"
-                    match = re.match(regex_not, line)
-                    input_wire_name = match.group(1)  # e.g. "x"
-                    output_wire_name = match.group(2)  # e.g. "h"
-                    circuit.add_gate_not(input_wire_name, output_wire_name)
-                elif "AND" in line:
+                    input_1 = match.group(1)  # e.g. "x"
+                    output = match.group(2)  # e.g. "h"
+                    yield Gate("NOT", output, [input_1])
+
+                match = re.match(regex_and, line)
+                if match is not None:
                     # e.g. "x AND y -> d"
-                    match = re.match(regex_and, line)
-                    input_1_wire_name = match.group(1)  # e.g. "x"
-                    input_2_wire_name = match.group(2)  # e.g. "y"
-                    output_wire_name = match.group(3)  # e.g. "d"
-                    circuit.add_gate_and(input_1_wire_name, input_2_wire_name, output_wire_name)
-                elif "OR" in line:
+                    input_1 = match.group(1)  # e.g. "x"
+                    input_2 = match.group(2)  # e.g. "y"
+                    output = match.group(3)  # e.g. "d"
+                    yield Gate("AND", output, [input_1, input_2])
+
+                match = re.match(regex_or, line)
+                if match is not None:
                     # e.g. "x OR y -> e"
-                    match = re.match(regex_or, line)
-                    input_1_wire_name = match.group(1)  # e.g. "x"
-                    input_2_wire_name = match.group(2)  # e.g. "y"
-                    output_wire_name = match.group(3)  # e.g. "e"
-                    circuit.add_gate_or(input_1_wire_name, input_2_wire_name, output_wire_name)
-                elif "LSHIFT" in line:
+                    input_1 = match.group(1)  # e.g. "x"
+                    input_2 = match.group(2)  # e.g. "y"
+                    output = match.group(3)  # e.g. "e"
+                    yield Gate("OR", output, [input_1, input_2])
+
+                match = re.match(regex_lshift, line)
+                if match is not None:
                     # e.g. "x LSHIFT 2 -> f"
-                    match = re.match(regex_lshift, line)
-                    print(line, match)
-                    input_wire_name = match.group(1)  # e.g. "x"
-                    input_param = match.group(2)  # e.g. "2" TODO byte?
-                    output_wire_name = match.group(3)  # e.g. "f"
-                    circuit.add_gate_lshift(input_wire_name, input_param, output_wire_name)
-                elif "RSHIFT" in line:
-                    # e.g. "y RSHIFT 2 -> g"
-                    match = re.match(regex_rshift, line)
-                    input_wire_name = match.group(1)  # e.g. "y"
-                    input_param = match.group(2)  # e.g. "2" TODO byte?
-                    output_wire_name = match.group(3)  # e.g. "g"
-                    circuit.add_gate_rshift(input_wire_name, input_param, output_wire_name)
-                else:
+                    input_1 = match.group(1)  # e.g. "x"
+                    input_2 = match.group(2)  # e.g. "2"
+                    output = match.group(3)  # e.g. "f"
+                    yield Gate("LSHIFT", output, [input_1, input_2])
+
+                match = re.match(regex_rshift, line)
+                if match is not None:
+                    # e.g. "x RSHIFT 2 -> f"
+                    input_1 = match.group(1)  # e.g. "x"
+                    input_2 = match.group(2)  # e.g. "2"
+                    output = match.group(3)  # e.g. "f"
+                    yield Gate("RSHIFT", output, [input_1, input_2])
+
+                match = re.match(regex_direct, line)
+                if match is not None:
                     # e.g. "123 -> x"
-                    match = re.match(regex_direct_val, line)
-                    if match is not None:
-                        input_param = match.group(1)  # e.g. "2" TODO byte?
-                        output_wire_name = match.group(2)  # e.g. "y"
-                        circuit.add_gate_direct_value(input_param, output_wire_name)
-                    else:
-                        # e.g. "lx -> a"
-                        match = re.match(regex_direct_gate, line)
-                        input_wire_name = match.group(1)  # e.g. "lx"
-                        output_wire_name = match.group(2)  # e.g. "a"
-                        circuit.add_gate_direct_gate(input_wire_name, output_wire_name)
+                    input_1 = match.group(1)  # e.g. "123"
+                    output = match.group(2)  # e.g. "x"
+                    yield Gate("DIRECT", output, [input_1])
 
-            return circuit
-
-        circuit = build_circuit(puzzle_input)
-
-        return circuit.get_gate(target_gate).resolve_output_value(circuit)
+        # === start of main ===
+        circuit = Circuit(parse_gates(puzzle_input))
+        return circuit.get_gate(target_gate).resolve_output()
 
     # @staticmethod
     # def solve_puzzle_2(puzzle_input):
