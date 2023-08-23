@@ -5,7 +5,7 @@ import unittest
 from parameterized import parameterized
 
 
-class PuzzleDay06:
+class PuzzleDay07:
 
     @staticmethod
     def solve_puzzle_1(puzzle_input, target_gate):
@@ -274,17 +274,17 @@ y RSHIFT 2 -> g
 NOT x -> h
 NOT y -> i"""
 
-        self.assertEqual(puzzle_solution, PuzzleDay06.solve_puzzle_1(puzzle_input, target_date))
+        self.assertEqual(puzzle_solution, PuzzleDay07.solve_puzzle_1(puzzle_input, target_date))
 
     def test_puzzle1(self):
         puzzle_input = open(os.path.join(os.path.dirname(__file__), 'input_puzzle.txt'), "r").read()
         puzzle_answer = 46065
-        self.assertEqual(puzzle_answer, PuzzleDay06.solve_puzzle_1(puzzle_input, "a"))
+        self.assertEqual(puzzle_answer, PuzzleDay07.solve_puzzle_1(puzzle_input, "a"))
 
     def test_puzzle2(self):
         puzzle_input = open(os.path.join(os.path.dirname(__file__), 'input_puzzle.txt'), "r").read()
         puzzle_answer = 14687245
-        self.assertEqual(puzzle_answer, PuzzleDay06.solve_puzzle_2(puzzle_input, "a"))
+        self.assertEqual(puzzle_answer, PuzzleDay07.solve_puzzle_2(puzzle_input, "a"))
 
 
 if __name__ == '__main__':
